@@ -5,4 +5,6 @@ Idea by Kusane
 
 Implemented by noi2coco
 
-Manual available [here](https://ktane.timwi.de/HTML/Simon%20Forgets.html)
+[Reference Manual](https://ktane.timwi.de/HTML/Simon%20Forgets.html)
+
+[Subscribe to this module](https://steamcommunity.com/sharedfiles/filedetails/?id=1952732783)
