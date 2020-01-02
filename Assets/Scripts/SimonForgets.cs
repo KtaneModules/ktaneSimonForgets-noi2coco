@@ -186,17 +186,6 @@ public class SimonForgets : MonoBehaviour
                         _waitS1 = false;
                         _answerIndex = 0;
                         turnOffLeds();
-                        if (_solvableModulesCount == _solvedModules)
-                        {
-                            // remove stages not set due to strikes (solving 2 modules in a row)
-                            _answersS2 = _answersS2.Where(c => c != null).ToArray();
-                            foreach (Colors[] colors in _answersS2)
-                                _answersLength += colors.Length;
-                            _waitForAnswer = true;
-                            generateStage(); // change button position
-                            updateModuleVisuals();
-                            Debug.LogFormat("[Simon Forgets #{0}] Waiting for answer: {1}", _moduleId, printStringList(_answersS2.SelectMany(e => e).ToList()));
-                        }
                     }
                 }
                 else if (_answerIndex == _answersLength)
@@ -298,9 +287,9 @@ public class SimonForgets : MonoBehaviour
         if (++_tick == 5)
         {
             _tick = 0;
-            if (_solvableModulesCount == 0)
+            if (_solvableModulesCount <= 1)
             {
-                Debug.LogFormat("[Simon Forgets #{0}] No solvable module: autosolving", _moduleId);
+                Debug.LogFormat("[Simon Forgets #{0}] Not enough solvable modules: autosolving", _moduleId);
                 Module.HandlePass();
                 _moduleSolved = true;
                 return;
@@ -319,13 +308,24 @@ public class SimonForgets : MonoBehaviour
             {
                 Debug.LogFormat("[Simon Forgets #{0}] Strike: other module solved before entering Stage Sequence", _moduleId);
                 Module.HandleStrike();
-                return; // keep current solution
+                if (_solvedModules != _solvableModulesCount)
+                    return; // keep current solution
             }
-            else
+            if (_solvedModules == _solvableModulesCount)
             {
-                _stageCounter++;
+                // remove stages not set due to strikes (solving 2 modules in a row)
+                _answersS2 = _answersS2.Where(c => c != null).ToArray();
+                foreach (Colors[] colors in _answersS2)
+                    _answersLength += colors.Length;
+                _waitForAnswer = true;
+                _waitS1 = false;
+                generateStage(); // change button position
+                updateModuleVisuals();
+                Debug.LogFormat("[Simon Forgets #{0}] Waiting for answer: {1}", _moduleId, printStringList(_answersS2.SelectMany(e => e).ToList()));
+                return;
             }
 
+            _stageCounter++;
             generateStage();
             updateModuleVisuals();
             _waitS1 = true;
@@ -348,7 +348,10 @@ public class SimonForgets : MonoBehaviour
             _colorOrder[i] = _colorOrder[index];
             _colorOrder[index] = tmp;
         }
-        Debug.LogFormat("[Simon Forgets #{0}] Color order for stage {1}: {2}", _moduleId, _stageCounter, printStringList(_colorOrder));
+        if (_waitForAnswer)
+            Debug.LogFormat("[Simon Forgets #{0}] Color order for the final answer: {1}", _moduleId, printStringList(_colorOrder));
+        else
+            Debug.LogFormat("[Simon Forgets #{0}] Color order for stage {1}: {2}", _moduleId, _stageCounter, printStringList(_colorOrder));
         // exit after picking new button positions
         if (_waitForAnswer)
             return;
