@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using KModkit;
+using System.Text.RegularExpressions;
 using Rnd = UnityEngine.Random;
 public class SimonForgets : MonoBehaviour
 {
@@ -299,6 +300,9 @@ public class SimonForgets : MonoBehaviour
             List<String> solves = Bomb.GetSolvedModuleNames().ToList();
             foreach (String d in _ignoredModules)
                 solves.Remove(d);
+            foreach (KMBombModule d in TwitchAbandonModule)
+                solves.Remove(d.ModuleDisplayName);
+
             // same state
             if (_solvedModules == solves.Count)
                 return;
@@ -1089,5 +1093,59 @@ public class SimonForgets : MonoBehaviour
     int mod(int a, int n)
     {
         return (a % n + n) % n;
+    }
+
+    // Twitch plays
+    private bool isValid(string par)
+    {
+        string[] something = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+        if (!something.Contains(par))
+        {
+            return false;
+        }
+        return true;
+    }
+#pragma warning disable 414
+    private readonly string TwitchHelpMessage = @"!{0} press <#> [Presses buttons at positions 1-10 in reading order with a space between each number]";
+#pragma warning restore 414
+    IEnumerator ProcessTwitchCommand(string command)
+    {
+        command = Regex.Replace(command, @"\s+", " ").Trim();
+        string[] parameters = command.Split(' ');
+        if (Regex.IsMatch(parameters[0], @"^\s*press\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        {
+            yield return null;
+            if (parameters.Length < 2)
+            {
+                yield return "sendtochaterror Please specify what buttons you would like to press!";
+            }
+            else
+            {
+                for (int i = 1; i < parameters.Length; i++)
+                {
+                    if (!isValid(parameters.ElementAt(i)))
+                    {
+                        yield return "sendtochaterror " + parameters[i] + ", which was a number inputted to the module, is invalid. Please use numbers 1-10.";
+                        yield break;
+                    }
+                }
+                for (int i = 1; i < parameters.Length; i++)
+                {
+                    int temp = 0;
+                    int.TryParse(parameters[i], out temp);
+                    buttons[temp - 1].OnInteract();
+                    yield return new WaitForSeconds(0.1f);
+                }
+            }
+        }
+    }
+    private List<KMBombModule> TwitchAbandonModule = new List<KMBombModule>();
+    IEnumerator TwitchHandleForcedSolve()
+    {
+        yield return null;
+        _moduleSolved = true;
+        counterScreen.text = "";
+        turnOffLeds();
+        turnOffButtons();
     }
 }
