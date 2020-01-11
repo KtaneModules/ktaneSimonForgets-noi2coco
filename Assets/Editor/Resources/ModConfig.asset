@@ -14,7 +14,7 @@ MonoBehaviour:
   id: simonForgets
   title: Simon Forgets
   author: noi2coco
-  description: 'Simon Forgets 1.0
+  description: 'Simon Forgets 1.1
 
 
     Module ID: simonForgets
@@ -28,7 +28,18 @@ MonoBehaviour:
 
     Manual available here:
 
-    http://ktane.timwi.de/HTML/Simon%20Forgets.html'
+    http://ktane.timwi.de/HTML/Simon%20Forgets.html
+
+    and here:
+
+    https://noi2coco.github.io/ktaneSimonForgets/Manual/Simon%20Forgets.html
+
+
+    Source code:
+
+    https://github.com/noi2coco/ktaneSimonForgets
+
+'
   version: 1.0
   outputFolder: build
   previewImage: {fileID: 2800000, guid: 83e3cbeff98e74f489d3f5fd1112b536, type: 3}
