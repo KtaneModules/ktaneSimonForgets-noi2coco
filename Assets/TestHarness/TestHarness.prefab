@@ -20159,8 +20159,8 @@ MonoBehaviour:
   HighlightPrefab: {fileID: 100000, guid: d78a484c6e87f1b47b6596ac080fe942, type: 2}
   AudioVolume: 1
   AudioClips: []
-  StrikeCount: 3
-  TimeLimit: 600
+  StrikeCount: 100
+  TimeLimit: 900
   BombSize: 1
   FrontFaceOnly: 1
   EdgeworkConfiguration: {fileID: 0}
