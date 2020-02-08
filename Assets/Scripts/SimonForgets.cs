@@ -366,30 +366,35 @@ public class SimonForgets : MonoBehaviour
             _flashingColors.Add((Colors)Rnd.Range(0, 10));
         Debug.LogFormat("[Simon Forgets #{0}] Flashing colors: {1}", _moduleId, printStringList(_flashingColors));
 
-    leds:
         // pick new led colors
         _onLeds.Clear();
         int nLeds = Rnd.Range(1, 11);
+        // special case for the tenth stage, need exactly two lit leds
+        if (_stageCounter == 10)
+            nLeds = 2;
         for (int i = 0; i < nLeds; ++i)
         {
             int index = Rnd.Range(0, colors.Count);
             _onLeds.Add(colors[index]);
             colors.RemoveAt(index);
         }
-        // special case for the tenth stage, need exactly two lit leds
-        if (_stageCounter == 10 && _onLeds.Count != 2)
-        {
-            if (_onLeds.Count < 2)
-            {
-                goto leds;
-            }
-            while (_onLeds.Count > 2) _onLeds.RemoveAt(0);
-        }
         // special case for stages >= 12 and leds conditions leading to stage 10 rules (2 lit leds)
-        if (!_onLeds.Contains(Colors.White) && !_onLeds.Contains(Colors.Yellow) && !_onLeds.Contains(Colors.Pink)
-            && !_onLeds.Contains(Colors.Magenta) && !_onLeds.Contains(Colors.Red) && !_onLeds.Contains(Colors.Blue)
-            && _onLeds.Contains(Colors.Green))
-            goto leds;
+        if (_stageCounter >= 12 && _onLeds.Count != 2 && !_onLeds.Contains(Colors.White) && !_onLeds.Contains(Colors.Yellow)
+            && !_onLeds.Contains(Colors.Pink) && !_onLeds.Contains(Colors.Magenta) && !_onLeds.Contains(Colors.Red)
+            && !_onLeds.Contains(Colors.Blue) && _onLeds.Contains(Colors.Green))
+        {
+            if (_onLeds.Count > 2)
+            {
+                // removing Green changes the rule
+                while (_onLeds.Count > 2 && _onLeds.Contains(Colors.Green))
+                    _onLeds.RemoveAt(_onLeds.Count - 1);
+            }
+            else
+            {
+                // may lead to another rule
+                _onLeds.Add(colors[Rnd.Range(1, 10)]);
+            }
+        }
 
         Debug.LogFormat("[Simon Forgets #{0}] Leds ON: {1}", _moduleId, printStringList(_onLeds));
         // append solution
