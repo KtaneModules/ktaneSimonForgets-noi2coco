@@ -1136,9 +1136,12 @@ public class SimonForgets : MonoBehaviour
                 }
                 for (int i = 1; i < parameters.Length; i++)
                 {
+                    bool last_waitS1 = _waitS1;
                     int temp = 0;
                     int.TryParse(parameters[i], out temp);
                     buttons[temp - 1].OnInteract();
+                    if (last_waitS1 && !_waitS1)
+                        yield return "awardpoints 2";
                     yield return new WaitForSeconds(0.1f);
                 }
             }
