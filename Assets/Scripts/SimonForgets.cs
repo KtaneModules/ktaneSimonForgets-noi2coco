@@ -67,31 +67,40 @@ public class SimonForgets : MonoBehaviour
         {
             _ignoredModules = GetComponent<KMBossModule>().GetIgnoredModules("Simon Forgets", new string[] {
                 "14",
-                "Cruel Purgatory",
-                "Cookie Jars",
-                "Divided Squares",
+                "A>N<D",
+                "Bamboozling Time Keeper",
+                "Brainf---",
+                "Busy Beaver",
                 "Forget Enigma",
                 "Forget Everything",
                 "Forget It Not",
                 "Forget Me Later",
                 "Forget Me Not",
                 "Forget Perspective",
+                "Forget The Colors",
                 "Forget Them All",
                 "Forget This",
                 "Forget Us Not",
-                "Hogwarts",
+                "Iconic",
+                "Kugelblitz",
+                "Multitask",
+                "OmegaForget",
                 "Organization",
+                "Password Destroyer",
                 "Purgatory",
-                "Simon's Stages",
+                "RPS Judging",
                 "Simon Forgets",
+                "Simon's Stages",
                 "Souvenir",
                 "Tallordered Keys",
+                "The Heart",
                 "The Swan",
                 "The Time Keeper",
-                "Timing is Everything",
                 "The Troll",
-                "Turn The Key",
+                "The Twin",
                 "The Very Annoying Button",
+                "Timing is Everything",
+                "Turn The Key",
                 "Ultimate Custom Night",
                 "Übermodule"
             });
@@ -283,7 +292,7 @@ public class SimonForgets : MonoBehaviour
 
     void Update()
     {
-        if (_moduleSolved || _answersS2 == null)
+        if (_moduleSolved || _answersS2 == null || _waitForAnswer)
             return;
         if (++_tick == 5)
         {
