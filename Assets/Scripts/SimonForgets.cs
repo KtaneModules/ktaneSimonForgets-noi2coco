@@ -47,6 +47,8 @@ public class SimonForgets : MonoBehaviour
     private int _answersLength = 0;
     private bool _waitForAnswer = false;
     private int _answerIndex = 0;
+    private bool _strikeTP;
+    private int _correctColorIndex;
     private readonly int[,] _stage10Table = new int[,] {
         {+0,+5,-3,+2,+1,+2,-3,+3,+1,-4},
         {+5,+0,+1,+4,-3,+0,-2,+2,-1,+2},
@@ -67,6 +69,8 @@ public class SimonForgets : MonoBehaviour
         {
             _ignoredModules = GetComponent<KMBossModule>().GetIgnoredModules("Simon Forgets", new string[] {
                 "14",
+                "42",
+                "501",
                 "A>N<D",
                 "Bamboozling Time Keeper",
                 "Brainf---",
@@ -112,7 +116,6 @@ public class SimonForgets : MonoBehaviour
             int j = i;
             buttons[i].OnInteract += delegate { buttonPress(j); return false; };
         }
-
     }
 
     void Start()
@@ -136,6 +139,8 @@ public class SimonForgets : MonoBehaviour
 
     string printStringList<T>(List<T> list)
     {
+        if (list.Count == 0)
+            return "{}";
         string str = "{ ";
         if (list.Count == 1) return str + list[0] + " }";
         for (int i = 0; i < list.Count - 1; ++i)
@@ -207,18 +212,17 @@ public class SimonForgets : MonoBehaviour
             else
             {
                 Debug.LogFormat("[Simon Forgets #{0}] Strike: expected {1}", _moduleId, expected);
-                Module.HandleStrike();
-                int index;
+                // strike happens in the coroutine for TP
                 if (_waitS1)
                 {
-                    index = _colorOrder.IndexOf(_answerS1[_answerIndex]);
+                    _correctColorIndex = _colorOrder.IndexOf(_answerS1[_answerIndex]);
                     _answerIndex = 0; // reset current stage if not final answer
                 }
                 else
                 {
-                    index = _colorOrder.IndexOf(getNthElement(_answersS2, _answerIndex));
+                    _correctColorIndex = _colorOrder.IndexOf(getNthElement(_answersS2, _answerIndex));
                 }
-                StartCoroutine(showCorrectColor(index));
+                StartCoroutine(showCorrectColor());
             }
         }
         else
@@ -248,14 +252,18 @@ public class SimonForgets : MonoBehaviour
         }
     }
 
-    IEnumerator showCorrectColor(int _index)
+    IEnumerator showCorrectColor()
     {
-        Light light = buttons[_index].GetComponentInChildren<Light>();
+        _strikeTP = true;
+        yield return new WaitForSeconds(0.05f);
+        Module.HandleStrike();
+        Light light = buttons[_correctColorIndex].GetComponentInChildren<Light>();
         // ON
         light.enabled = true;
         yield return new WaitForSeconds(1f);
         // OFF
         light.enabled = false;
+        _strikeTP = false;
     }
 
     void updateModuleVisuals()
@@ -278,6 +286,7 @@ public class SimonForgets : MonoBehaviour
         else
             counterScreen.text = _stageCounter.ToString().PadLeft(3, '0');
     }
+    
     void turnOffLeds()
     {
         foreach (MeshRenderer m in leds)
@@ -944,7 +953,7 @@ public class SimonForgets : MonoBehaviour
         if (_onLeds.Contains(Colors.Orange))
             shift(ref colors, -Bomb.GetSerialNumberNumbers().Last());
         else if (_onLeds.Contains(Colors.Pink))
-            shift(ref colors, Bomb.GetSolvedModuleNames().Count); // warning need verif
+            shift(ref colors, Bomb.GetSolvedModuleNames().Count);
         else if (_onLeds.Contains(Colors.Green))
             shift(ref colors, -Bomb.GetBatteryCount());
         else if (_onLeds.Contains(Colors.Purple))
@@ -956,13 +965,13 @@ public class SimonForgets : MonoBehaviour
     void stage9(ref List<Colors> colors)
     {
         // At least 2 letters from "WORD"
-        if (Bomb.GetSerialNumberLetters().Where(c => "STEINWAY".Contains(c)).Count() >= 2) // warning
+        if (Bomb.GetSerialNumberLetters().Where(c => "STEINWAY".Contains(c)).Count() >= 2)
             shift(ref colors, 4);
-        else if (Bomb.GetSerialNumberLetters().Where(c => "INTIMATE".Contains(c)).Count() >= 2) // warning
+        else if (Bomb.GetSerialNumberLetters().Where(c => "INTIMATE".Contains(c)).Count() >= 2)
             shift(ref colors, -2);
-        else if (Bomb.GetSerialNumberLetters().Where(c => "ORIENTAL".Contains(c)).Count() >= 2) // warning
+        else if (Bomb.GetSerialNumberLetters().Where(c => "ORIENTAL".Contains(c)).Count() >= 2)
             shift(ref colors, 3);
-        else if (Bomb.GetSerialNumberLetters().Where(c => "TACHYCARDIA".Contains(c)).Count() >= 2) // warning
+        else if (Bomb.GetSerialNumberLetters().Where(c => "TACHYCARDIA".Contains(c)).Count() >= 2)
             shift(ref colors, -7);
         else
             shift(ref colors, 2);
@@ -972,7 +981,7 @@ public class SimonForgets : MonoBehaviour
     {
         if (_onLeds.Count != 2)
         {
-            Debug.LogFormat("[Simon Forgets #{0}] Error while generating Tenth Stage rules. Autosolving");
+            Debug.LogFormat("[Simon Forgets #{0}] Error while generating Stage 10. Autosolving");
             Module.HandlePass();
             _moduleSolved = true;
             return;
@@ -1119,13 +1128,13 @@ public class SimonForgets : MonoBehaviour
         return true;
     }
 #pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"!{0} press <#> [Presses buttons at positions 1-10 in reading order with a space between each number]";
+    private readonly string TwitchHelpMessage = @"!{0} p|press <#> [Presses buttons at positions 1-10 in reading order with a space between each number]";
 #pragma warning restore 414
     IEnumerator ProcessTwitchCommand(string command)
     {
         command = Regex.Replace(command, @"\s+", " ").Trim();
         string[] parameters = command.Split(' ');
-        if (Regex.IsMatch(parameters[0], @"^\s*press\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        if (Regex.IsMatch(parameters[0], @"^\s*(p|press)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
         {
             yield return null;
             if (parameters.Length < 2)
@@ -1148,6 +1157,8 @@ public class SimonForgets : MonoBehaviour
                     int temp = 0;
                     int.TryParse(parameters[i], out temp);
                     buttons[temp - 1].OnInteract();
+                    if (_strikeTP)
+                        yield return "strikemessage {0}, button " + temp + " (" + _colorOrder[temp - 1] + "), input at position " + i + " was incorrect, expected " + _colorOrder[_correctColorIndex];
                     if (last_waitS1 && !_waitS1)
                         yield return "awardpoints 2";
                     yield return new WaitForSeconds(0.1f);
@@ -1155,10 +1166,11 @@ public class SimonForgets : MonoBehaviour
             }
         }
     }
-    private List<KMBombModule> TwitchAbandonModule = new List<KMBombModule>();
+
     IEnumerator TwitchHandleForcedSolve()
     {
         yield return null;
+        Module.HandlePass();
         _moduleSolved = true;
         counterScreen.text = "";
         turnOffLeds();
