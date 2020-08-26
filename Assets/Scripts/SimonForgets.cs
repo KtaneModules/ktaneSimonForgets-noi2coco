@@ -308,14 +308,13 @@ public class SimonForgets : MonoBehaviour
             // count solved modules minus ignored
             List<String> solves = Bomb.GetSolvedModuleNames().ToList();
             foreach (String d in _ignoredModules)
-                solves.Remove(d);
-            foreach (KMBombModule d in TwitchAbandonModule)
-                solves.Remove(d.ModuleDisplayName);
+                solves.RemoveAll(s => s == d);
 
             // same state
             if (_solvedModules == solves.Count)
                 return;
             _solvedModules = solves.Count;
+            Debug.LogFormat("[Simon Forgets #{0}] {1}/{2} modules solved", _moduleId, _solvedModules, _solvableModulesCount);
 
             if (_waitS1) // expected s1 before solving another module
             {
