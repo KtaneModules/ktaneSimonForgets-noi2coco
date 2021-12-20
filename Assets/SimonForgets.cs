@@ -329,7 +329,7 @@ public class SimonForgets : MonoBehaviour
             if (_solvedModules == _solvableModulesCount)
                 Debug.LogFormat("[Simon Forgets #{0}] Entering final stage.", _moduleId);
             else
-                Debug.LogFormat("[Simon Forgets #{0}] Entering Stage {1} of {2}.", _moduleId, _stageCounter, _solvableModulesCount - _skippedStages);
+                Debug.LogFormat("[Simon Forgets #{0}] Entering Stage {1} of {2}.", _moduleId, _stageCounter + 1, _solvableModulesCount - _skippedStages);
 
             if (_solvedModules == _solvableModulesCount)
             {
@@ -415,12 +415,12 @@ public class SimonForgets : MonoBehaviour
         Debug.LogFormat("[Simon Forgets #{0}] Stage {2} > LEDs ON: {1}", _moduleId, printStringList(_onLeds), _stageCounter);
         // append solution
         List<Colors> stageSeqence = computeStageSequence();
-        Debug.LogFormat("[Simon Forgets #{0}] Stage {2} > Input for this stage: {1}", _moduleId, printStringList(stageSeqence), _stageCounter);
+        Debug.LogFormat("[Simon Forgets #{0}] Stage {2} > Stage sequence (Input): {1}", _moduleId, printStringList(stageSeqence), _stageCounter);
 
         _answerS1 = new List<Colors>(stageSeqence);
 
         computeCurrentStageSolution(ref stageSeqence);
-        Debug.LogFormat("[Simon Forgets #{0}] Stage {2} > Computed sequence for this stage: {1}", _moduleId, printStringList(stageSeqence), _stageCounter);
+        Debug.LogFormat("[Simon Forgets #{0}] Stage {2} > Calculated sequence: {1}", _moduleId, printStringList(stageSeqence), _stageCounter);
 
         _answersS2[_stageCounter - 1] = new Colors[stageSeqence.Count];
         stageSeqence.ToArray().CopyTo(_answersS2[_stageCounter - 1], 0);
