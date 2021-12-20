@@ -38,7 +38,7 @@ public class SimonForgets : MonoBehaviour
     private int _stageCounter = 0;
     private int _solvedModules;
     private int _solvableModulesCount = 1; // Update is called before Activate
-    private List<Colors> _colorOrder;
+    private List<Colors> _colorOrder = new List<Colors>() { Colors.Yellow, Colors.Magenta, Colors.Purple, Colors.Red, Colors.Green, Colors.Cyan, Colors.White, Colors.Pink, Colors.Orange, Colors.Blue };
     private List<Colors> _flashingColors = new List<Colors>();
     private List<Colors> _onLeds = new List<Colors>();
     private List<Colors> _answerS1;
@@ -47,9 +47,11 @@ public class SimonForgets : MonoBehaviour
     private int _answersLength = 0;
     private bool _waitForAnswer = false;
     private int _answerIndex = 0;
-    private bool _strikeTP;
     private int _correctColorIndex;
     private int _skippedStages;
+    private bool _isSolving;
+    private bool _autosolving;
+    private static readonly string[] _xyloNames = new string[] { "Xylo0", "Xylo1", "Xylo2", "Xylo3", "Xylo4", "Xylo5", "Xylo6", "Xylo7", "Xylo8", "Xylo9" };
     private readonly int[,] _stage10Table = new int[,] {
         {+0,+5,-3,+2,+1,+2,-3,+3,+1,-4},
         {+5,+0,+1,+4,-3,+0,-2,+2,-1,+2},
@@ -170,65 +172,99 @@ public class SimonForgets : MonoBehaviour
     {
         buttons[i].AddInteractionPunch();
         Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, transform);
-        if (!_moduleSolved && (_waitForAnswer || _waitS1))
+        Audio.PlaySoundAtTransform(_xyloNames[i], transform);
+        if (!_moduleSolved && !_isSolving)
         {
-            
-            Colors expected;
-            if (_waitForAnswer) // final answer
-                expected = getNthElement(_answersS2, _answerIndex);
-            else // section 1 answer
-                expected = _answerS1[_answerIndex];
-
-            StopAllCoroutines(); // stop colour flash  
-            StartCoroutine(inputting()); // delay for input
-
-            if (expected == _colorOrder[i])
+            if (_waitForAnswer || _waitS1)
             {
-                _answerIndex++;
-                if (_waitS1)
+
+                Colors expected;
+                if (_waitForAnswer) // final answer
+                    expected = getNthElement(_answersS2, _answerIndex);
+                else // section 1 answer
+                    expected = _answerS1[_answerIndex];
+
+                StopAllCoroutines(); // stop colour flash  
+                StartCoroutine(inputting()); // delay for input
+
+                if (expected == _colorOrder[i])
                 {
-                    Debug.LogFormat("[Simon Forgets #{0}] Pressed {1} correctly.", _moduleId, _colorOrder[i]);
-                    if (_answerIndex == _answerS1.Count)
+                    _answerIndex++;
+                    if (_waitS1)
                     {
-                        _waitS1 = false;
-                        _answerIndex = 0;
-                        turnOffLeds();
-                        Debug.LogFormat("[Simon Forgets #{0}] Completed Stage {1}.", _moduleId, _stageCounter);
+                        Debug.LogFormat("[Simon Forgets #{0}] Pressed {1} correctly.", _moduleId, _colorOrder[i]);
+                        if (_answerIndex == _answerS1.Count)
+                        {
+                            _waitS1 = false;
+                            _answerIndex = 0;
+                            turnOffLeds();
+                            Debug.LogFormat("[Simon Forgets #{0}] Completed Stage {1}.", _moduleId, _stageCounter);
+                        }
+                    }
+                    else if (_answerIndex == _answersLength)
+                    {
+                        Debug.LogFormat("[Simon Forgets #{0}] Final input is correct. Module solved.", _moduleId);
+                        StartCoroutine(SolveAnimation());
                     }
                 }
-                else if (_answerIndex == _answersLength)
+                else
                 {
-                    Debug.LogFormat("[Simon Forgets #{0}] Final input is correct. Module solved.", _moduleId);
-                    Module.HandlePass();
-                    _moduleSolved = true;
+                    Debug.LogFormat("[Simon Forgets #{0}] Pressed {1}, when {2} was expected. Strike.", _moduleId, _colorOrder[i], expected);
+                    // strike happens in the coroutine for TP
+                    if (_waitS1)
+                    {
+                        _correctColorIndex = _colorOrder.IndexOf(_answerS1[_answerIndex]);
+                        _answerIndex = 0; // reset current stage if not final answer
+                    }
+                    else
+                    {
+                        _correctColorIndex = _colorOrder.IndexOf(getNthElement(_answersS2, _answerIndex));
+                    }
+                    StartCoroutine(showCorrectColor());
                 }
             }
             else
             {
-                Debug.LogFormat("[Simon Forgets #{0}] Pressed {1}, when {2} was expected. Strike.", _moduleId, _colorOrder[i], expected);
-                // strike happens in the coroutine for TP
-                if (_waitS1)
-                {
-                    _correctColorIndex = _colorOrder.IndexOf(_answerS1[_answerIndex]);
-                    _answerIndex = 0; // reset current stage if not final answer
-                }
-                else
-                {
-                    _correctColorIndex = _colorOrder.IndexOf(getNthElement(_answersS2, _answerIndex));
-                }
-                StartCoroutine(showCorrectColor());
+                Debug.LogFormat("[Simon Forgets #{0}] Pressed a button during a phase where input was not required. Strike.", _moduleId);
+                Module.HandleStrike();
             }
         }
-        else
+    }
+
+    private IEnumerator SolveAnimation()
+    {
+        _isSolving = true;
+        yield return new WaitForSeconds(0.5f);
+        for (int i = 9; i >= 0; i--)
         {
-            Debug.LogFormat("[Simon Forgets #{0}] Pressed a button during a phase where input was not required. Strike.", _moduleId);
-            Module.HandleStrike();
+            for (int j = 0; j < 10; j++)
+            {
+                if (j == i)
+                    buttons[j].GetComponentInChildren<Light>().enabled = true;
+                else
+                    buttons[j].GetComponentInChildren<Light>().enabled = false;
+            }
+            Audio.PlaySoundAtTransform(_xyloNames[i], transform);
+            yield return new WaitForSeconds(0.1f);
         }
+        yield return new WaitForSeconds(0.4f);
+        for (int i = 0; i < 10; i++)
+            buttons[i].GetComponentInChildren<Light>().enabled = true;
+        Audio.PlaySoundAtTransform(_xyloNames[0], transform);
+        yield return new WaitForSeconds(0.05f);
+        Audio.PlaySoundAtTransform(_xyloNames[2], transform);
+        yield return new WaitForSeconds(0.05f);
+        Audio.PlaySoundAtTransform(_xyloNames[4], transform);
+        yield return new WaitForSeconds(0.05f);
+        Audio.PlaySoundAtTransform(_xyloNames[7], transform);
+        Module.HandlePass();
+        _moduleSolved = true;
     }
 
     //coroutine flashing colours
     IEnumerator colorFlash()
     {
+        int initialFlash = 0;
         while (!_moduleSolved && (!_waitForAnswer || _waitS1))
         {
             foreach (Colors c in _flashingColors)
@@ -236,19 +272,21 @@ public class SimonForgets : MonoBehaviour
                 Light light = buttons[_colorOrder.IndexOf(c)].GetComponentInChildren<Light>();
                 // ON
                 light.enabled = true;
+                if (initialFlash == 0)
+                    Audio.PlaySoundAtTransform(_xyloNames[(int)c], transform);
                 yield return new WaitForSeconds(0.4f);
                 // OFF
                 light.enabled = false;
                 yield return new WaitForSeconds(0.4f);
             }
             //pause before restart
+            initialFlash++;
             yield return new WaitForSeconds(2f);
         }
     }
 
     IEnumerator showCorrectColor()
     {
-        _strikeTP = true;
         yield return new WaitForSeconds(0.05f);
         Module.HandleStrike();
         Light light = buttons[_correctColorIndex].GetComponentInChildren<Light>();
@@ -257,7 +295,6 @@ public class SimonForgets : MonoBehaviour
         yield return new WaitForSeconds(1f);
         // OFF
         light.enabled = false;
-        _strikeTP = false;
     }
 
     void updateModuleVisuals()
@@ -300,11 +337,11 @@ public class SimonForgets : MonoBehaviour
         if (++_tick == 5)
         {
             _tick = 0;
-            if (_solvableModulesCount <= 1)
+            if (_solvableModulesCount <= 1 && !_autosolving)
             {
+                _autosolving = true;
                 Debug.LogFormat("[Simon Forgets #{0}] Not enough solvable modules. Autosolving...", _moduleId);
-                Module.HandlePass();
-                _moduleSolved = true;
+                StartCoroutine(SolveAnimation());
                 return;
             }
 
@@ -1117,54 +1154,69 @@ public class SimonForgets : MonoBehaviour
     // Twitch plays
     private bool isValid(string par)
     {
-        string[] something = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
-        if (!something.Contains(par))
-        {
+        string[] pos = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+        if (!pos.Contains(par))
             return false;
-        }
         return true;
     }
+
 #pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"!{0} p|press <#> [Presses buttons at positions 1-10 in reading order with a space between each number]";
+    private readonly string TwitchHelpMessage = @"!{0} press 1-10 or !{0} press roygcbmpwi [Press buttons in positions 1-10 or colors ROYGCBMPWI. I = Pink.";
 #pragma warning restore 414
-    IEnumerator ProcessTwitchCommand(string command)
+    private IEnumerator ProcessTwitchCommand(string command)
     {
-        command = Regex.Replace(command, @"\s+", " ").Trim();
-        string[] parameters = command.Split(' ');
-        if (Regex.IsMatch(parameters[0], @"^\s*(p|press)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        var tpcStr = "ROYGCBMPWIroygcbmpwi";
+        var tpCols = new[] { Colors.Red, Colors.Orange, Colors.Yellow, Colors.Green, Colors.Cyan, Colors.Blue, Colors.Magenta, Colors.Purple, Colors.White, Colors.Pink };
+        var m = Regex.Match(command, @"^\s*(press\s+)?([roygcbmpwi ]+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (m.Success)
+        {
+            yield return null;
+            foreach (var ch in m.Groups[2].Value)
+            {
+                var ix = tpcStr.IndexOf(ch) % 10;
+                if (ix != -1)
+                {
+                    bool last_waitS1 = _waitS1;
+                    buttons[Array.IndexOf(_colorOrder.ToArray(), tpCols[ix])].OnInteract();
+                    yield return new WaitForSeconds(0.2f);
+                    if (last_waitS1 && !_waitS1)
+                        yield return "awardpoints 5";
+                }
+            }
+            yield break;
+        }
+        var parameters = command.Split(' ');
+        m = Regex.Match(parameters[0], @"^\s*(press)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (m.Success)
         {
             yield return null;
             if (parameters.Length < 2)
             {
-                yield return "sendtochaterror Please specify what buttons you would like to press!";
+                yield return "sendtochaterror Specify which buttons you'd like to press. Use colors ROYGCBPWI or numbers 1-10.";
+                yield break;
             }
-            else
+            for (int i = 1; i < parameters.Length; i++)
             {
-                for (int i = 1; i < parameters.Length; i++)
+                if (!isValid(parameters.ElementAt(i)))
                 {
-                    if (!isValid(parameters.ElementAt(i)))
-                    {
-                        yield return "sendtochaterror " + parameters[i] + ", which was a number inputted to the module, is invalid. Please use numbers 1-10.";
-                        yield break;
-                    }
+                    yield return "sendtochaterror The command " + parameters[i] + " is invalid. Use colors ROYGCBPWI or numbers 1-10.";
+                    yield break;
                 }
-                for (int i = 1; i < parameters.Length; i++)
-                {
-                    bool last_waitS1 = _waitS1;
-                    int temp = 0;
-                    int.TryParse(parameters[i], out temp);
-                    buttons[temp - 1].OnInteract();
-                    if (_strikeTP)
-                        yield return "strikemessage {0}, button " + temp + " (" + _colorOrder[temp - 1] + "), input at position " + i + " was incorrect, expected " + _colorOrder[_correctColorIndex];
-                    if (last_waitS1 && !_waitS1)
-                        yield return "awardpoints 2";
-                    yield return new WaitForSeconds(0.1f);
-                }
+            }
+            for (int i = 1; i < parameters.Length; i++)
+            {
+                bool last_waitS1 = _waitS1;
+                int temp;
+                int.TryParse(parameters[i], out temp);
+                buttons[temp - 1].OnInteract();
+                if (last_waitS1 && !_waitS1)
+                    yield return "awardpoints 5";
+                yield return new WaitForSeconds(0.2f);
             }
         }
     }
 
-    IEnumerator TwitchHandleForcedSolve()
+    private IEnumerator TwitchHandleForcedSolve()
     {
         yield return null;
         Module.HandlePass();
