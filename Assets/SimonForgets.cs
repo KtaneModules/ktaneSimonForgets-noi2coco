@@ -240,16 +240,27 @@ public class SimonForgets : MonoBehaviour
             for (int j = 0; j < 10; j++)
             {
                 if (j == i)
+                {
                     buttons[j].GetComponentInChildren<Light>().enabled = true;
+                    leds[j].GetComponentInChildren<Light>().enabled = true;
+                }
                 else
+                {
                     buttons[j].GetComponentInChildren<Light>().enabled = false;
+                    leds[j].GetComponentInChildren<Light>().enabled = false;
+                }
             }
             Audio.PlaySoundAtTransform(_xyloNames[i], transform);
             yield return new WaitForSeconds(0.1f);
         }
+        buttons[0].GetComponentInChildren<Light>().enabled = false;
+        leds[0].GetComponentInChildren<Light>().enabled = false;
         yield return new WaitForSeconds(0.4f);
         for (int i = 0; i < 10; i++)
+        {
             buttons[i].GetComponentInChildren<Light>().enabled = true;
+            leds[i].GetComponentInChildren<Light>().enabled = true;
+        }
         Audio.PlaySoundAtTransform(_xyloNames[0], transform);
         yield return new WaitForSeconds(0.05f);
         Audio.PlaySoundAtTransform(_xyloNames[2], transform);
