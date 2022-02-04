@@ -1191,7 +1191,14 @@ public class SimonForgets : MonoBehaviour
                     buttons[Array.IndexOf(_colorOrder.ToArray(), tpCols[ix])].OnInteract();
                     yield return new WaitForSeconds(0.2f);
                     if (last_waitS1 && !_waitS1)
-                        yield return "awardpoints 5";
+                    {
+                        if (_stageCounter == 1 || _stageCounter == 2)
+                            yield return "awardpoints 5";
+                        else if (_stageCounter == 3 || _stageCounter == 4)
+                            yield return "awardpoints 4";
+                        else
+                            yield return "awardpoints 3";
+                    }
                 }
             }
             yield break;
@@ -1221,7 +1228,14 @@ public class SimonForgets : MonoBehaviour
                 int.TryParse(parameters[i], out temp);
                 buttons[temp - 1].OnInteract();
                 if (last_waitS1 && !_waitS1)
-                    yield return "awardpoints 5";
+                {
+                    if (_stageCounter == 1 || _stageCounter == 2)
+                        yield return "awardpoints 5";
+                    else if (_stageCounter == 3 || _stageCounter == 4)
+                        yield return "awardpoints 4";
+                    else
+                        yield return "awardpoints 3";
+                }
                 yield return new WaitForSeconds(0.2f);
             }
         }
