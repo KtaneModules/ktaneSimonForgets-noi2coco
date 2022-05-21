@@ -16,6 +16,7 @@ public class SimonForgets : MonoBehaviour
     public KMSelectable[] buttons;
     public Material[] colorMats;
     public Material[] opaqueMats;
+    public TextMesh[] colorblindMeshes;
     enum Colors
     {
         Purple, // Violet
@@ -51,6 +52,7 @@ public class SimonForgets : MonoBehaviour
     private int _skippedStages;
     private bool _isSolving;
     private bool _autosolving;
+    private bool _colorblind;
     private static readonly string[] _xyloNames = new string[] { "Xylo0", "Xylo1", "Xylo2", "Xylo3", "Xylo4", "Xylo5", "Xylo6", "Xylo7", "Xylo8", "Xylo9" };
     private readonly int[,] _stage10Table = new int[,] {
         {+0,+5,-3,+2,+1,+2,-3,+3,+1,-4},
@@ -122,6 +124,9 @@ public class SimonForgets : MonoBehaviour
     void Start()
     {
         Module.OnActivate += Activate;
+        _colorblind = GetComponent<KMColorblindMode>().ColorblindModeActive;
+        for (int i = 0; i < 10; ++i)
+            colorblindMeshes[i].gameObject.SetActive(_colorblind);
         // scale lights depending on bomb casing
         float scalar = transform.lossyScale.x;
         foreach (KMSelectable button in buttons)
@@ -316,6 +321,7 @@ public class SimonForgets : MonoBehaviour
         {
             buttons[i].GetComponent<Renderer>().material = opaqueMats[(int)_colorOrder[i]];
             buttons[i].GetComponentInChildren<Light>().color = colorMats[(int)_colorOrder[i]].color;
+            colorblindMeshes[i].text = _colorOrder[i] == Colors.Pink ? "I" : _colorOrder[i].ToString()[0].ToString();
         }
         if (!_waitForAnswer)
         {
@@ -1172,10 +1178,17 @@ public class SimonForgets : MonoBehaviour
     }
 
 #pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"!{0} press 1-10 or !{0} press roygcbmpwi [Press buttons in positions 1-10 or colors ROYGCBMPWI. I = Pink.";
+    private readonly string TwitchHelpMessage = @"!{0} press 1-10 or !{0} press roygcbmpwi [Press buttons in positions 1-10 or colors ROYGCBMPWI. I = Pink. | !{0} colorblind";
 #pragma warning restore 414
     private IEnumerator ProcessTwitchCommand(string command)
     {
+        var pieces = command.Trim().ToLowerInvariant().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (pieces.Length == 1 && pieces[0] == "colorblind")
+        {
+            yield return toggleColorblindMode();
+            yield break;
+        }
+
         var tpcStr = "ROYGCBMPWIroygcbmpwi";
         var tpCols = new[] { Colors.Red, Colors.Orange, Colors.Yellow, Colors.Green, Colors.Cyan, Colors.Blue, Colors.Magenta, Colors.Purple, Colors.White, Colors.Pink };
         var m = Regex.Match(command, @"^\s*(press\s+)?([roygcbmpwi ]+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -1238,6 +1251,17 @@ public class SimonForgets : MonoBehaviour
                 }
                 yield return new WaitForSeconds(0.2f);
             }
+        }
+    }
+
+    private IEnumerator toggleColorblindMode()
+    {
+        _colorblind = !_colorblind;
+        yield return null;
+        for (int i = 0; i < 10; ++i)
+        {
+            yield return new WaitForSeconds(.1f);
+            colorblindMeshes[i].gameObject.SetActive(_colorblind);
         }
     }
 
