@@ -266,13 +266,7 @@ public class SimonForgets : MonoBehaviour
             buttons[i].GetComponentInChildren<Light>().enabled = true;
             leds[i].GetComponentInChildren<Light>().enabled = true;
         }
-        Audio.PlaySoundAtTransform(_xyloNames[0], transform);
-        yield return new WaitForSeconds(0.05f);
-        Audio.PlaySoundAtTransform(_xyloNames[2], transform);
-        yield return new WaitForSeconds(0.05f);
-        Audio.PlaySoundAtTransform(_xyloNames[4], transform);
-        yield return new WaitForSeconds(0.05f);
-        Audio.PlaySoundAtTransform(_xyloNames[7], transform);
+        Audio.PlaySoundAtTransform("solve", transform);
         Module.HandlePass();
         _moduleSolved = true;
     }
@@ -959,8 +953,8 @@ public class SimonForgets : MonoBehaviour
             }
         }
 
-        int n = (int)char.GetNumericValue(Bomb.GetSerialNumber().Last());
-        if (n > 0 && n % 2 == 0)
+        int n = Bomb.GetSerialNumberNumbers().Last();
+        if (n % 2 == 0)
             shift(ref colors, offset);
         else
             shift(ref colors, -offset);
